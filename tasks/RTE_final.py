@@ -670,6 +670,7 @@ class RTEDecomp(Decomposition):
         chopped_answer = get_response(
             question_prompt,
             manifest,
+            overwrite=bool(overwrite_manifest),
             max_toks=50)
         chopped_answer = chopped_answer.split("\n")
         question = [ch for ch in chopped_answer if ch][0]
@@ -696,7 +697,8 @@ class RTEDecomp(Decomposition):
         qa_prompt += "Answer:"
         answer = get_response(
             qa_prompt, 
-            manifest, 
+            manifest,
+            overwrite=bool(overwrite_manifest),
             max_toks=50
         )
         answer = answer.replace(",", "").replace(".", "").replace("?", "")
