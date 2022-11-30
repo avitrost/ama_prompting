@@ -552,6 +552,7 @@ class RTEDecomp(Decomposition):
 
             prompts_across_boost = []
             preds_across_boost = []
+            generated_qas = []
             for boost_num, boost_examples in enumerate(boost_dfs):
                 all_prompts = []
 
@@ -574,9 +575,11 @@ class RTEDecomp(Decomposition):
 
                     open_answer = open_answer.replace("-", "")
                     open_answer = " ".join([a for a in open_answer.split() if a not in stops])
+                    final_answer = open_answer
                     if proposed_answer:
                         answer = proposed_answer.replace("-", "")
                         answer = " ".join([a for a in answer.split() if a not in stops])
+                        final_answer = answer
                         if all(wd in open_answer.lower() for wd in answer.lower().split()) or all(wd in answer.lower() for wd in open_answer.lower().split()):
                             pred = "True"
                         else:
@@ -585,6 +588,10 @@ class RTEDecomp(Decomposition):
                             pred = 'False'
                     else:
                         pred = self.resolve_pred(open_answer.lower(), open_answer)
+
+                    qa_pair = (question, final_answer)
+                    generated_qas.append(qa_pair)
+
                 else:
                     chopped_answer, cuttoff, chopper_prompt = self.get_chopping(
                         statement, cloze_convertor, boost_examples[0], manifest, cuttoff_size=2)
@@ -598,6 +605,40 @@ class RTEDecomp(Decomposition):
                 prompts_across_boost.append(all_prompts)
                 preds_across_boost.append(pred)
 
+            # NEW ADDITIONS (new generated question)
+            print('**************START NEW ADDITIONS****************')
+            all_prompts = []
+            question, proposed_answer, question_final_prompt = self.get_new_question(passage, generated_qas, manifest, overwrite_manifest)
+            open_answer, answer_final_prompt = self.new_open_qa(passage, question, generated_qas, manifest, overwrite_manifest)
+            print('GENERATED QUESTION:')
+            print(question)
+            print('PROPOSED ANSWER:')
+            print(proposed_answer)
+            all_prompts.append(question_final_prompt)
+            all_prompts.append(answer_final_prompt)
+            print("PROMPT:")
+            print(question_final_prompt)
+            print("\nPROMPT:")
+            print(answer_final_prompt)
+            print('OPEN ANSWER:')
+            print(open_answer)
+            open_answer = open_answer.replace("-", "")
+            open_answer = " ".join([a for a in open_answer.split() if a not in stops])
+            if proposed_answer:
+                answer = proposed_answer.replace("-", "")
+                answer = " ".join([a for a in answer.split() if a not in stops])
+                if all(wd in open_answer.lower() for wd in answer.lower().split()) or all(wd in answer.lower() for wd in open_answer.lower().split()):
+                    pred = "True"
+                else:
+                    pred = 'False'
+                if not answer.strip():
+                    pred = 'False'
+            else:
+                pred = self.resolve_pred(open_answer.lower(), open_answer)
+            prompts_across_boost.append(all_prompts)
+            preds_across_boost.append(pred)
+            print('**************END NEW ADDITIONS****************')
+
             entry = {
                 "ind": ind,
                 "prompts": prompts_across_boost,
@@ -609,6 +650,57 @@ class RTEDecomp(Decomposition):
             all_boost_preds.append(preds_across_boost)
             labels.append(gold)
         return expt_log, all_boost_preds, labels
+
+    def get_new_question(self, passage, generated_qas, manifest, overwrite_manifest):
+        # from the previous questions, obtain the new question
+        # prompt_suffix = prompt(boost_ex)
+        # quesiton_prompt = f"{prompt_suffix}\n\nStatement: {{statement:}}\nQuestion:"
+        # quesiton_prompt = quesiton_prompt.format(statement=statement).replace("\n\nAnswer:", "\nAnswer:")
+        question_prompt = "Given the context, create a new question from the examples.\n\n"
+        question_prompt += f"Context: {passage}\n\n"
+        for existing_question, final_answer in generated_qas:
+            question_prompt += f"Question: {existing_question}\n"
+            question_prompt += f"Answer: {final_answer}\n\n"
+        question_prompt += "Question:"
+        chopped_answer = get_response(
+            question_prompt,
+            manifest,
+            max_toks=50)
+        chopped_answer = chopped_answer.split("\n")
+        question = [ch for ch in chopped_answer if ch][0]
+        answer = [ch for ch in chopped_answer if ch.startswith("Answer: ")]
+        if answer:
+            answer = answer[0].replace(",", "").replace(".", "").replace("?", "").replace("Answer: ", "")
+            answer = " ".join([a for a in answer.split() if a not in stops])
+        else:
+            answer = ''
+        
+        return question, answer, question_prompt
+
+    def new_open_qa(self, passage, question, generated_qas, manifest, overwrite_manifest):
+        # answer the generated question. same format as previously?
+        # prompt_suffix = prompt(boost_ex)
+        # qa_prompt = f"{prompt_suffix}\n\n----\n\nContext: {{passage:}}\n\nQuestion: {{question:}}\n\nAnswer:"
+        # qa_prompt = qa_prompt.format(passage=passage, question=question)
+        qa_prompt = "Given the context and the examples, answer the question.\n\n"
+        qa_prompt += f"Context: {passage}\n\n"
+        for existing_question, final_answer in generated_qas:
+            qa_prompt += f"Question: {existing_question}\n"
+            qa_prompt += f"Answer: {final_answer}\n\n"
+        qa_prompt += f"Question: {question}\n"
+        qa_prompt += "Answer:"
+        answer = get_response(
+            qa_prompt, 
+            manifest, 
+            max_toks=50
+        )
+        answer = answer.replace(",", "").replace(".", "").replace("?", "")
+        answer = [a for a in answer.split("\n") if a]
+        if answer:
+            answer = answer[0]
+        else:
+            answer = passage
+        return answer, qa_prompt
 
 def main():
     args = get_args()
