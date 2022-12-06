@@ -613,7 +613,7 @@ class RTEDecomp(Decomposition):
             # NEW ADDITIONS (new generated question)
             print('**************START NEW ADDITIONS****************')
             all_prompts = []
-            question, proposed_answer, question_final_prompt = self.get_new_question(passage, generated_qas, manifest, overwrite_manifest)
+            question, proposed_answer, question_final_prompt = self.get_new_question(passage, statement, generated_qas, manifest, overwrite_manifest)
             open_answer, answer_final_prompt = self.new_open_qa(passage, question, generated_qas, manifest, overwrite_manifest)
             print('GENERATED QUESTION:')
             print(question)
@@ -656,16 +656,17 @@ class RTEDecomp(Decomposition):
             labels.append(gold)
         return expt_log, all_boost_preds, labels
 
-    def get_new_question(self, passage, generated_qas, manifest, overwrite_manifest):
+    def get_new_question(self, passage, statement, generated_qas, manifest, overwrite_manifest):
         # from the previous questions, obtain the new question
         # prompt_suffix = prompt(boost_ex)
         # quesiton_prompt = f"{prompt_suffix}\n\nStatement: {{statement:}}\nQuestion:"
         # quesiton_prompt = quesiton_prompt.format(statement=statement).replace("\n\nAnswer:", "\nAnswer:")
-        question_prompt = "Given the context, create a new question.\n\n"
+        question_prompt = "Given the context, rephrase the statement as a question in a different format.\n\n"
         question_prompt += f"Context: {passage}\n\n"
         # for existing_question, final_answer in generated_qas:
         #     question_prompt += f"Question: {existing_question}\n"
         #     question_prompt += f"Answer: {final_answer}\n\n"
+        question_prompt += f"Statement: {statement}\n\n"
         question_prompt += "Question:"
         chopped_answer = get_response(
             question_prompt,
