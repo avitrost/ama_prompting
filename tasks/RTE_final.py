@@ -455,6 +455,20 @@ class RTEDecomp(Decomposition):
             pred = "False"
         return pred
 
+    def resolve_pairwise_pred(self, pairwise_answer):
+        answer = pairwise_answer.lower()
+        is_yes = "yes" in answer.split() or "true" in answer.split() or "agree" in answer.split() or "agreement" in answer.split()
+        is_no = "no" in answer.split()  or "false" in answer.split() or "disagree" in answer.split() or "disagreement" in answer.split()
+        is_maybe = False
+        answer = answer.replace("-", "")
+        
+        pred = "False" 
+        if is_yes and (not is_maybe and not is_no):
+            pred = "True"
+        if is_no and (not is_maybe and not is_yes):
+            pred = "False"
+        return pred
+
     def get_choices_answer(self, chopped_answer, cuttoff, prompt, boost_ex, manifest, overwrite_manifest, get_choices_prompt=''):
         prompt_suffix = prompt(boost_ex)
         prompt = f"{prompt_suffix}\n\nExample: {{example:}}\nList alternatives:\n- {{cuttoff:}}\n"
@@ -629,9 +643,11 @@ class RTEDecomp(Decomposition):
             print(open_answer)
             open_answer = open_answer.replace("-", "")
             open_answer = " ".join([a for a in open_answer.split() if a not in stops])
+            final_answer = open_answer
             if proposed_answer:
                 answer = proposed_answer.replace("-", "")
                 answer = " ".join([a for a in answer.split() if a not in stops])
+                final_answer = answer
                 if all(wd in open_answer.lower() for wd in answer.lower().split()) or all(wd in answer.lower() for wd in open_answer.lower().split()):
                     pred = "True"
                 else:
@@ -640,8 +656,14 @@ class RTEDecomp(Decomposition):
                     pred = 'False'
             else:
                 pred = self.resolve_pred(open_answer.lower(), open_answer)
+            # Pairwise agreement with generated prompt
+            pairwise_agreements, pairwise_prompts = self.get_pairwise_agreements(passage, question, final_answer, generated_qas, manifest, overwrite_manifest)
+            for pairwise_pred in pairwise_agreements:
+                preds_across_boost.append(self.resolve_pairwise_pred(pairwise_pred))
+            for pairwise_prompt in pairwise_prompts:
+                all_prompts.append(pairwise_prompt)
             prompts_across_boost.append(all_prompts)
-            preds_across_boost.append(pred)
+            # preds_across_boost.append(pred)
             print('**************END NEW ADDITIONS****************')
 
             entry = {
@@ -656,17 +678,43 @@ class RTEDecomp(Decomposition):
             labels.append(gold)
         return expt_log, all_boost_preds, labels
 
+    def get_pairwise_agreements(self, passage, question, new_question_answer, generated_qas, manifest, overwrite_manifest):
+        # see if qas agree with the new generated question to generate pred
+        answers, prompts = []
+        for existing_question, final_answer in generated_qas:
+            question_prompt = "True or false: given the context, do these two question answer pairs agree? If there is no evidence for either, return \"Unknown\".\n\n"
+            question_prompt += f"Context: {passage}\n\n"
+            question_prompt += f"Question 1: {existing_question}\n"
+            question_prompt += f"Answer 1: {final_answer}\n\n"
+            question_prompt += f"Question 2: {question}\n"
+            question_prompt += f"Answer 2: {new_question_answer}\n\n"
+            question_prompt += "Agreement:"
+            answer = get_response(
+                question_prompt,
+                manifest,
+                overwrite=bool(overwrite_manifest),
+                max_toks=50)
+            answer = answer.replace(",", "").replace(".", "").replace("?", "")
+            answer = [a for a in answer.split("\n") if a]
+            if answer:
+                answer = answer[0]
+            else:
+                answer = passage
+            answers.append(answer)
+            prompts.append(question_prompt)
+        return answers, prompts
+
     def get_new_question(self, passage, statement, generated_qas, manifest, overwrite_manifest):
         # from the previous questions, obtain the new question
         # prompt_suffix = prompt(boost_ex)
         # quesiton_prompt = f"{prompt_suffix}\n\nStatement: {{statement:}}\nQuestion:"
         # quesiton_prompt = quesiton_prompt.format(statement=statement).replace("\n\nAnswer:", "\nAnswer:")
-        question_prompt = "Given the context, rephrase the statement as a question in a different format.\n\n"
+        question_prompt = "Given the context, create a new question from the examples.\n\n"
         question_prompt += f"Context: {passage}\n\n"
-        # for existing_question, final_answer in generated_qas:
-        #     question_prompt += f"Question: {existing_question}\n"
-        #     question_prompt += f"Answer: {final_answer}\n\n"
-        question_prompt += f"Statement: {statement}\n\n"
+        for existing_question, final_answer in generated_qas:
+            question_prompt += f"Question: {existing_question}\n"
+            question_prompt += f"Answer: {final_answer}\n\n"
+        # question_prompt += f"Statement: {statement}\n\n"
         question_prompt += "Question:"
         chopped_answer = get_response(
             question_prompt,
