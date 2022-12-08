@@ -702,6 +702,9 @@ class RTEDecomp(Decomposition):
                 answer = passage
             answers.append(answer)
             prompts.append(question_prompt)
+        for i in range(answers):
+            print(f'PAIRWISE ANSWER {i}:')
+            print(answer[i])
         return answers, prompts
 
     def get_new_question(self, passage, statement, generated_qas, manifest, overwrite_manifest):
