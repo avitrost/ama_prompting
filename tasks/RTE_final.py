@@ -680,7 +680,7 @@ class RTEDecomp(Decomposition):
 
     def get_pairwise_agreements(self, passage, question, new_question_answer, generated_qas, manifest, overwrite_manifest):
         # see if qas agree with the new generated question to generate pred
-        answers, prompts = []
+        answers, prompts = [], []
         for existing_question, final_answer in generated_qas:
             question_prompt = "True or false: given the context, do these two question answer pairs agree? If there is no evidence for either, return \"Unknown\".\n\n"
             question_prompt += f"Context: {passage}\n\n"
