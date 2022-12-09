@@ -702,7 +702,7 @@ class RTEDecomp(Decomposition):
                 answer = passage
             answers.append(answer)
             prompts.append(question_prompt)
-        for i in range(answers):
+        for i in range(len(answers)):
             print(f'PAIRWISE ANSWER {i}:')
             print(answer[i])
         return answers, prompts
