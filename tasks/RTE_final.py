@@ -712,7 +712,7 @@ class RTEDecomp(Decomposition):
         # prompt_suffix = prompt(boost_ex)
         # quesiton_prompt = f"{prompt_suffix}\n\nStatement: {{statement:}}\nQuestion:"
         # quesiton_prompt = quesiton_prompt.format(statement=statement).replace("\n\nAnswer:", "\nAnswer:")
-        question_prompt = "Given the context, create a new question from the examples. Try to make the question different from any of the examples.\n\n"
+        question_prompt = "Given the context, create a new question from the examples. Do not repeat an existing question.\n\n"
         question_prompt += f"Context: {passage}\n\n"
         for existing_question, final_answer in generated_qas:
             question_prompt += f"Question: {existing_question}\n"
