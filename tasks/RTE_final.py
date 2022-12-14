@@ -656,12 +656,13 @@ class RTEDecomp(Decomposition):
                     pred = 'False'
             else:
                 pred = self.resolve_pred(open_answer.lower(), open_answer)
+            preds_across_boost.append(pred)
             # Pairwise agreement with generated prompt
-            pairwise_agreements, pairwise_prompts = self.get_pairwise_agreements(passage, question, final_answer, generated_qas, manifest, overwrite_manifest)
-            for pairwise_pred in pairwise_agreements:
-                preds_across_boost.append(self.resolve_pairwise_pred(pairwise_pred))
-            for pairwise_prompt in pairwise_prompts:
-                all_prompts.append(pairwise_prompt)
+            # pairwise_agreements, pairwise_prompts = self.get_pairwise_agreements(passage, question, final_answer, generated_qas, manifest, overwrite_manifest)
+            # for pairwise_pred in pairwise_agreements:
+            #     preds_across_boost.append(self.resolve_pairwise_pred(pairwise_pred))
+            # for pairwise_prompt in pairwise_prompts:
+            #     all_prompts.append(pairwise_prompt)
             prompts_across_boost.append(all_prompts)
             # preds_across_boost.append(pred)
             print('**************END NEW ADDITIONS****************')
@@ -712,7 +713,7 @@ class RTEDecomp(Decomposition):
         # prompt_suffix = prompt(boost_ex)
         # quesiton_prompt = f"{prompt_suffix}\n\nStatement: {{statement:}}\nQuestion:"
         # quesiton_prompt = quesiton_prompt.format(statement=statement).replace("\n\nAnswer:", "\nAnswer:")
-        question_prompt = "Given the context, create a new question from the examples. Do not repeat an existing question.\n\n"
+        question_prompt = "Given the context, create a new question from the examples.\n\n"
         question_prompt += f"Context: {passage}\n\n"
         for existing_question, final_answer in generated_qas:
             question_prompt += f"Question: {existing_question}\n"
