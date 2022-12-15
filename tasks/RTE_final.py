@@ -625,47 +625,47 @@ class RTEDecomp(Decomposition):
                 preds_across_boost.append(pred)
 
             # NEW ADDITIONS (new generated question)
-            print('**************START NEW ADDITIONS****************')
-            all_prompts = []
-            question, proposed_answer, question_final_prompt = self.get_new_question(passage, statement, generated_qas, manifest, overwrite_manifest)
-            open_answer, answer_final_prompt = self.new_open_qa(passage, question, generated_qas, manifest, overwrite_manifest)
-            print('GENERATED QUESTION:')
-            print(question)
-            print('PROPOSED ANSWER:')
-            print(proposed_answer)
-            all_prompts.append(question_final_prompt)
-            all_prompts.append(answer_final_prompt)
-            print("PROMPT:")
-            print(question_final_prompt)
-            print("\nPROMPT:")
-            print(answer_final_prompt)
-            print('OPEN ANSWER:')
-            print(open_answer)
-            open_answer = open_answer.replace("-", "")
-            open_answer = " ".join([a for a in open_answer.split() if a not in stops])
-            final_answer = open_answer
-            if proposed_answer:
-                answer = proposed_answer.replace("-", "")
-                answer = " ".join([a for a in answer.split() if a not in stops])
-                final_answer = answer
-                if all(wd in open_answer.lower() for wd in answer.lower().split()) or all(wd in answer.lower() for wd in open_answer.lower().split()):
-                    pred = "True"
-                else:
-                    pred = 'False'
-                if not answer.strip():
-                    pred = 'False'
-            else:
-                pred = self.resolve_pred(open_answer.lower(), open_answer)
-            preds_across_boost.append(pred)
-            # Pairwise agreement with generated prompt
-            # pairwise_agreements, pairwise_prompts = self.get_pairwise_agreements(passage, question, final_answer, generated_qas, manifest, overwrite_manifest)
-            # for pairwise_pred in pairwise_agreements:
-            #     preds_across_boost.append(self.resolve_pairwise_pred(pairwise_pred))
-            # for pairwise_prompt in pairwise_prompts:
-            #     all_prompts.append(pairwise_prompt)
-            prompts_across_boost.append(all_prompts)
-            preds_across_boost.append(pred)
-            print('**************END NEW ADDITIONS****************')
+            # print('**************START NEW ADDITIONS****************')
+            # all_prompts = []
+            # question, proposed_answer, question_final_prompt = self.get_new_question(passage, statement, generated_qas, manifest, overwrite_manifest)
+            # open_answer, answer_final_prompt = self.new_open_qa(passage, question, generated_qas, manifest, overwrite_manifest)
+            # print('GENERATED QUESTION:')
+            # print(question)
+            # print('PROPOSED ANSWER:')
+            # print(proposed_answer)
+            # all_prompts.append(question_final_prompt)
+            # all_prompts.append(answer_final_prompt)
+            # print("PROMPT:")
+            # print(question_final_prompt)
+            # print("\nPROMPT:")
+            # print(answer_final_prompt)
+            # print('OPEN ANSWER:')
+            # print(open_answer)
+            # open_answer = open_answer.replace("-", "")
+            # open_answer = " ".join([a for a in open_answer.split() if a not in stops])
+            # final_answer = open_answer
+            # if proposed_answer:
+            #     answer = proposed_answer.replace("-", "")
+            #     answer = " ".join([a for a in answer.split() if a not in stops])
+            #     final_answer = answer
+            #     if all(wd in open_answer.lower() for wd in answer.lower().split()) or all(wd in answer.lower() for wd in open_answer.lower().split()):
+            #         pred = "True"
+            #     else:
+            #         pred = 'False'
+            #     if not answer.strip():
+            #         pred = 'False'
+            # else:
+            #     pred = self.resolve_pred(open_answer.lower(), open_answer)
+            # preds_across_boost.append(pred)
+            # # Pairwise agreement with generated prompt
+            # # pairwise_agreements, pairwise_prompts = self.get_pairwise_agreements(passage, question, final_answer, generated_qas, manifest, overwrite_manifest)
+            # # for pairwise_pred in pairwise_agreements:
+            # #     preds_across_boost.append(self.resolve_pairwise_pred(pairwise_pred))
+            # # for pairwise_prompt in pairwise_prompts:
+            # #     all_prompts.append(pairwise_prompt)
+            # prompts_across_boost.append(all_prompts)
+            # preds_across_boost.append(pred)
+            # print('**************END NEW ADDITIONS****************')
 
             entry = {
                 "ind": ind,
